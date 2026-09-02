@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EDEFF3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12141E" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Forbidden Words is a two-player word game for one phone. Describe the word on the card without saying any of the five forbidden words.">
+<title>Forbidden Words</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B45E0'/%3E%3Ctext x='16' y='23.5' font-family='Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  /* base reset */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg: #EDEFF3;
+    --card: #FFFFFF;
+    --ink: #16182A;
+    --muted: #6B6F85;
+    --line: #D5D8E2;
+    --accent: #5B45E0;
+    --taboo: #E23D3D;
+    --good: #1F9D6B;
+    --shadow: 0 1px 2px rgba(22, 24, 42, 0.06), 0 8px 24px rgba(22, 24, 42, 0.06);
+    --font-display: "Bricolage Grotesque", "Trebuchet MS", Verdana, sans-serif;
+    --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12141E;
+      --card: #1B1E2C;
+      --ink: #F1F2F7;
+      --muted: #9A9EB5;
+      --line: #2C3042;
+      --accent: #8B7BFF;
+      --taboo: #FF6B6B;
+      --good: #3DD598;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12141E;
+    --card: #1B1E2C;
+    --ink: #F1F2F7;
+    --muted: #9A9EB5;
+    --line: #2C3042;
+    --accent: #8B7BFF;
+    --taboo: #FF6B6B;
+    --good: #3DD598;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  [hidden] { display: none !important; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+    display: block;
+  }
+
+  .screen { display: flex; flex-direction: column; gap: 20px; }
+
+  h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+  h1 { font-size: 32px; line-height: 1.1; }
+  h2 { font-size: 24px; line-height: 1.15; }
+  h3 { font-size: 15px; font-weight: 700; letter-spacing: 0; font-family: var(--font-body); }
+  p { margin: 0; }
+
+  .sub { color: var(--muted); font-size: 15px; }
+  .tiny { font-size: 13px; color: var(--muted); }
+  .center { text-align: center; }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--muted); }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    min-height: 48px;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select { background-image: none; }
+  input[type="number"] { text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 16px;
+    min-height: 48px;
+    cursor: pointer;
+    text-align: center;
+  }
+  button:disabled { opacity: 0.4; cursor: default; }
+
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+  .btn-good { background: var(--good); border-color: var(--good); color: #FFFFFF; }
+  .btn-taboo { background: var(--taboo); border-color: var(--taboo); color: #FFFFFF; }
+  .btn-big { min-height: 56px; font-size: 17px; }
+  .btn-link {
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    min-height: 36px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .btn-link:hover { color: var(--ink); }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--muted); }
+  ol.steps li { padding-left: 2px; }
+
+  /* Scoreboard */
+  .board { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg);
+  }
+  .row.active { border-color: var(--accent); background: var(--card); }
+  .row .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .row .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row.active .nm { color: var(--accent); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+  .row.active .dot { background: var(--accent); }
+  .score { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 20px; }
+
+  .banner {
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: var(--card);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .banner .big { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; color: var(--accent); }
+
+  .links { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; }
+
+  /* Round screen */
+  #screen-round { min-height: calc(100dvh - 44px); }
+  .timer {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 46px;
+    line-height: 1;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+  .timer.low { color: var(--taboo); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) {
+    .timer.low { animation: none; }
+    * { transition: none !important; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .target {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    font-size: 44px;
+    color: var(--accent);
+    word-break: break-word;
+    hyphens: auto;
+  }
+  @media (min-width: 400px) { .target { font-size: 52px; } }
+  .rule { height: 1px; background: var(--line); border: none; margin: 0; }
+  .taboo-list { display: flex; flex-direction: column; gap: 10px; }
+  .taboo-item { display: flex; align-items: center; gap: 12px; }
+  .taboo-item .tick { width: 3px; height: 18px; border-radius: 2px; background: var(--taboo); flex: none; }
+  .taboo-item .txt { color: var(--taboo); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); }
+  .meta .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .spacer { flex: 1 1 auto; min-height: 8px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .actions button { min-height: 56px; font-size: 15px; padding: 8px 6px; }
+
+  .groups { display: flex; flex-direction: column; gap: 12px; }
+  .group { display: flex; flex-direction: column; gap: 4px; }
+  .group .lbl { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .group.got .lbl { color: var(--good); }
+  .group.tab .lbl { color: var(--taboo); }
+  .group.skp .lbl { color: var(--muted); }
+  .group .val { font-size: 15px; }
+
+  .result {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 1;
+  }
+  .result.pos { color: var(--good); }
+  .result.neg { color: var(--taboo); }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+  <section class="screen" id="screen-setup">
+    <div>
+      <h1>Forbidden Words</h1>
+      <p class="sub">Taboo for two, on one phone.</p>
+    </div>
+
+    <div class="panel">
+      <div class="grid2">
+        <div class="field">
+          <label for="p1">Player 1 name</label>
+          <input type="text" id="p1" autocomplete="off" spellcheck="false" placeholder="Player 1">
+        </div>
+        <div class="field">
+          <label for="p2">Player 2 name</label>
+          <input type="text" id="p2" autocomplete="off" spellcheck="false" placeholder="Player 2">
+        </div>
+      </div>
+      <div class="field">
+        <label for="len">Round length</label>
+        <select id="len">
+          <option value="45">45 seconds</option>
+          <option value="60">60 seconds</option>
+          <option value="90">90 seconds</option>
+          <option value="120">120 seconds</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="goal">Play to</label>
+        <select id="goal">
+          <option value="10">10 points</option>
+          <option value="15">15 points</option>
+          <option value="20">20 points</option>
+          <option value="30">30 points</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="skips">Skips allowed per round</label>
+        <select id="skips">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="-1">Unlimited</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>How it works</h3>
+      <ol class="steps">
+        <li>The clue-giver holds the phone and describes the word without saying any red word.</li>
+        <li>The other player guesses out loud.</li>
+        <li>Tap "Got it" for each correct guess, "Taboo!" if a red word slips out, "Skip" to pass.</li>
+        <li>When the timer ends, add the round to the score and pass the phone. First to the target wins.</li>
+      </ol>
+    </div>
+
+    <button type="button" class="btn-primary btn-big" id="btn-start-game">Start game</button>
+  </section>
+
+  <section class="screen" id="screen-handoff" hidden>
+    <div class="banner" id="win-banner" hidden>
+      <span class="big" id="win-name">Nobody wins</span>
+      <span class="tiny" id="win-sub">Final score</span>
+    </div>
+
+    <div>
+      <h2 id="handoff-title">Hand off</h2>
+      <p class="sub" id="handoff-sub">First to 15 points.</p>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <button type="button" class="btn-primary btn-big" id="btn-start-turn">Start the turn</button>
+    <p class="tiny center" id="handoff-note">Only the clue-giver should look at the next screen.</p>
+
+    <button type="button" class="btn-primary btn-big" id="btn-play-again" hidden>Play again</button>
+
+    <div class="links">
+      <button type="button" class="btn-link" id="btn-swap">Swap who's up</button>
+      <button type="button" class="btn-link" id="btn-new">New game</button>
+    </div>
+
+    <div class="panel" id="confirm-new" hidden>
+      <p class="tiny">Start a new game? Both scores reset to zero.</p>
+      <div class="grid2">
+        <button type="button" id="btn-new-cancel">Cancel</button>
+        <button type="button" class="btn-taboo" id="btn-new-confirm">New game</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-round" hidden>
+    <div class="timer" id="timer">1:00</div>
+
+    <div class="card">
+      <div class="target" id="target">Word</div>
+      <hr class="rule">
+      <div class="taboo-list" id="taboo-list"></div>
+    </div>
+
+    <div class="meta">
+      <span id="skips-left">Skips left: 3</span>
+      <span class="mono" id="tally">Got +0, Taboo -0</span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="actions">
+      <button type="button" id="btn-skip">Skip</button>
+      <button type="button" class="btn-taboo" id="btn-taboo">Taboo!</button>
+      <button type="button" class="btn-good" id="btn-got">Got it</button>
+    </div>
+    <button type="button" class="btn-link" id="btn-end-early">End turn early</button>
+    <p class="tiny center">Keyboard: S skip, T taboo, G or space for got it.</p>
+  </section>
+
+  <section class="screen" id="screen-over" hidden>
+    <div>
+      <h2 id="over-title">Time's up</h2>
+      <p class="sub" id="over-sub">Round for Player 1.</p>
+    </div>
+
+    <div class="panel">
+      <div class="result" id="over-points">+0</div>
+      <p class="tiny">Round points</p>
+    </div>
+
+    <div class="panel groups">
+      <div class="group got">
+        <span class="lbl">Got it</span>
+        <span class="val" id="over-got">&mdash;</span>
+      </div>
+      <div class="group tab">
+        <span class="lbl">Taboo</span>
+        <span class="val" id="over-taboo">&mdash;</span>
+      </div>
+      <div class="group skp">
+        <span class="lbl">Skipped</span>
+        <span class="val" id="over-skipped">&mdash;</span>
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary btn-big" id="btn-apply">Add +0 to Player 1</button>
+    <div class="links">
+      <button type="button" class="btn-link" id="btn-discard">Discard this round</button>
+    </div>
+  </section>
+
+</main>
+<script>
+/*DECK-START*/
+var DECK = [
+  { w: "Pizza", t: ["Cheese", "Slice", "Italy", "Pepperoni", "Delivery"] },
+  { w: "Coffee", t: ["Bean", "Morning", "Cup", "Caffeine", "Brew"] },
+  { w: "Pancake", t: ["Syrup", "Breakfast", "Flat", "Batter", "Flip"] },
+  { w: "Sushi", t: ["Rice", "Raw", "Japan", "Roll", "Seaweed"] },
+  { w: "Popcorn", t: ["Movie", "Kernel", "Butter", "Corn", "Bucket"] },
+  { w: "Ice cream", t: ["Cone", "Cold", "Scoop", "Vanilla", "Dessert"] },
+  { w: "Burrito", t: ["Wrap", "Beans", "Mexican", "Tortilla", "Rice"] },
+  { w: "Chocolate", t: ["Candy", "Cocoa", "Sweet", "Bar", "Brown"] },
+  { w: "Pasta", t: ["Noodle", "Sauce", "Italy", "Boil", "Spaghetti"] },
+  { w: "Salad", t: ["Lettuce", "Bowl", "Healthy", "Dressing", "Vegetable"] },
+  { w: "Bacon", t: ["Pig", "Crispy", "Breakfast", "Strip", "Fry"] },
+  { w: "Cereal", t: ["Milk", "Bowl", "Breakfast", "Flakes", "Spoon"] },
+  { w: "Honey", t: ["Bee", "Sweet", "Sticky", "Jar", "Golden"] },
+  { w: "Peanut butter", t: ["Jelly", "Sandwich", "Spread", "Nut", "Sticky"] },
+  { w: "Watermelon", t: ["Seed", "Summer", "Slice", "Green", "Juicy"] },
+  { w: "Lemonade", t: ["Sour", "Sugar", "Stand", "Drink", "Summer"] },
+  { w: "Cheeseburger", t: ["Bun", "Beef", "Grill", "Patty", "Fries"] },
+  { w: "Taco", t: ["Shell", "Tuesday", "Mexican", "Filling", "Fold"] },
+  { w: "Soup", t: ["Bowl", "Spoon", "Hot", "Broth", "Ladle"] },
+  { w: "Pickle", t: ["Cucumber", "Jar", "Sour", "Brine", "Crunchy"] },
+  { w: "Donut", t: ["Hole", "Glaze", "Ring", "Sprinkles", "Fried"] },
+  { w: "Toast", t: ["Bread", "Butter", "Brown", "Pop", "Breakfast"] },
+  { w: "Cheese", t: ["Milk", "Yellow", "Cheddar", "Mouse", "Melt"] },
+  { w: "Egg", t: ["Shell", "Chicken", "Yolk", "Scramble", "Breakfast"] },
+  { w: "Barbecue", t: ["Grill", "Smoke", "Ribs", "Sauce", "Backyard"] },
+  { w: "Noodles", t: ["Slurp", "Ramen", "Broth", "Chopsticks", "Long"] },
+  { w: "Garlic", t: ["Clove", "Breath", "Vampire", "Bulb", "Cooking"] },
+  { w: "Mustard", t: ["Yellow", "Hot dog", "Condiment", "Bottle", "Squeeze"] },
+  { w: "Cupcake", t: ["Frosting", "Small", "Bake", "Wrapper", "Birthday"] },
+  { w: "Smoothie", t: ["Blender", "Fruit", "Straw", "Thick", "Drink"] },
+  { w: "Waffle", t: ["Squares", "Syrup", "Iron", "Breakfast", "Batter"] },
+  { w: "Popsicle", t: ["Frozen", "Stick", "Summer", "Melt", "Lick"] },
+  { w: "Olive", t: ["Pit", "Green", "Oil", "Jar", "Salty"] },
+  { w: "Pretzel", t: ["Salt", "Twist", "Knot", "Snack", "Crunchy"] },
+  { w: "Elephant", t: ["Trunk", "Big", "Gray", "Tusk", "Africa"] },
+  { w: "Penguin", t: ["Antarctica", "Waddle", "Black", "Bird", "Swim"] },
+  { w: "Kangaroo", t: ["Australia", "Pouch", "Hop", "Jump", "Marsupial"] },
+  { w: "Octopus", t: ["Eight", "Tentacle", "Ocean", "Ink", "Arms"] },
+  { w: "Squirrel", t: ["Nut", "Tree", "Tail", "Acorn", "Bushy"] },
+  { w: "Butterfly", t: ["Wings", "Caterpillar", "Cocoon", "Flower", "Flutter"] },
+  { w: "Dolphin", t: ["Ocean", "Smart", "Swim", "Mammal", "Flipper"] },
+  { w: "Owl", t: ["Night", "Hoot", "Bird", "Wise", "Feathers"] },
+  { w: "Giraffe", t: ["Neck", "Tall", "Spots", "Africa", "Zoo"] },
+  { w: "Snake", t: ["Slither", "Venom", "Scales", "Hiss", "Legless"] },
+  { w: "Hamster", t: ["Wheel", "Cage", "Pet", "Cheeks", "Small"] },
+  { w: "Shark", t: ["Teeth", "Ocean", "Fin", "Bite", "Jaws"] },
+  { w: "Bee", t: ["Honey", "Sting", "Buzz", "Hive", "Pollen"] },
+  { w: "Frog", t: ["Jump", "Pond", "Green", "Croak", "Tadpole"] },
+  { w: "Horse", t: ["Ride", "Saddle", "Gallop", "Mane", "Stable"] },
+  { w: "Chicken", t: ["Egg", "Cluck", "Farm", "Feathers", "Coop"] },
+  { w: "Whale", t: ["Ocean", "Huge", "Blue", "Blubber", "Spout"] },
+  { w: "Spider", t: ["Web", "Eight", "Legs", "Crawl", "Bite"] },
+  { w: "Bat", t: ["Cave", "Night", "Wings", "Vampire", "Echo"] },
+  { w: "Turtle", t: ["Shell", "Slow", "Ocean", "Reptile", "Hide"] },
+  { w: "Panda", t: ["Bamboo", "China", "Black", "White", "Bear"] },
+  { w: "Camel", t: ["Hump", "Desert", "Sand", "Ride", "Water"] },
+  { w: "Wolf", t: ["Howl", "Pack", "Moon", "Dog", "Forest"] },
+  { w: "Peacock", t: ["Feathers", "Tail", "Colorful", "Bird", "Display"] },
+  { w: "Raccoon", t: ["Trash", "Mask", "Night", "Stripes", "Bandit"] },
+  { w: "Hedgehog", t: ["Spines", "Curl", "Small", "Prickly", "Garden"] },
+  { w: "Flamingo", t: ["Pink", "Leg", "Stand", "Bird", "Water"] },
+  { w: "Crab", t: ["Claw", "Sideways", "Beach", "Shell", "Pinch"] },
+  { w: "Toothbrush", t: ["Teeth", "Bristles", "Paste", "Clean", "Mouth"] },
+  { w: "Umbrella", t: ["Rain", "Open", "Handle", "Wet", "Cover"] },
+  { w: "Refrigerator", t: ["Cold", "Kitchen", "Food", "Door", "Freezer"] },
+  { w: "Vacuum", t: ["Carpet", "Dust", "Suck", "Clean", "Floor"] },
+  { w: "Pillow", t: ["Sleep", "Head", "Bed", "Soft", "Case"] },
+  { w: "Mirror", t: ["Reflect", "Glass", "Look", "Bathroom", "Face"] },
+  { w: "Candle", t: ["Wax", "Wick", "Flame", "Light", "Melt"] },
+  { w: "Broom", t: ["Sweep", "Bristles", "Floor", "Dust", "Witch"] },
+  { w: "Blender", t: ["Smoothie", "Blade", "Mix", "Kitchen", "Spin"] },
+  { w: "Ladder", t: ["Climb", "Steps", "Tall", "Rungs", "Reach"] },
+  { w: "Hammer", t: ["Nail", "Tool", "Hit", "Build", "Head"] },
+  { w: "Scissors", t: ["Cut", "Blades", "Paper", "Sharp", "Snip"] },
+  { w: "Doorbell", t: ["Ring", "House", "Visitor", "Press", "Chime"] },
+  { w: "Laundry", t: ["Wash", "Clothes", "Dryer", "Basket", "Fold"] },
+  { w: "Toaster", t: ["Bread", "Pop", "Slot", "Kitchen", "Brown"] },
+  { w: "Curtain", t: ["Window", "Hang", "Fabric", "Close", "Blinds"] },
+  { w: "Sponge", t: ["Dish", "Soak", "Soap", "Absorb", "Wet"] },
+  { w: "Alarm clock", t: ["Wake", "Morning", "Ring", "Snooze", "Bed"] },
+  { w: "Stapler", t: ["Paper", "Staple", "Office", "Press", "Attach"] },
+  { w: "Flashlight", t: ["Beam", "Battery", "Dark", "Shine", "Torch"] },
+  { w: "Blanket", t: ["Warm", "Bed", "Cover", "Cozy", "Fold"] },
+  { w: "Key", t: ["Lock", "Door", "Open", "Metal", "Ring"] },
+  { w: "Wallet", t: ["Money", "Cards", "Pocket", "Leather", "Cash"] },
+  { w: "Bucket", t: ["Water", "Carry", "Handle", "Fill", "Mop"] },
+  { w: "Fireplace", t: ["Wood", "Chimney", "Warm", "Logs", "Burn"] },
+  { w: "Kettle", t: ["Boil", "Water", "Tea", "Whistle", "Spout"] },
+  { w: "Doormat", t: ["Shoes", "Wipe", "Entrance", "Welcome", "Floor"] },
+  { w: "Screwdriver", t: ["Screw", "Turn", "Tool", "Flat", "Handle"] },
+  { w: "Library", t: ["Books", "Quiet", "Borrow", "Shelves", "Read"] },
+  { w: "Airport", t: ["Plane", "Terminal", "Luggage", "Gate", "Fly"] },
+  { w: "Hospital", t: ["Doctor", "Nurse", "Sick", "Patient", "Emergency"] },
+  { w: "Beach", t: ["Sand", "Ocean", "Waves", "Towel", "Sun"] },
+  { w: "Museum", t: ["Art", "Exhibit", "Tour", "History", "Gallery"] },
+  { w: "Farm", t: ["Crops", "Barn", "Animals", "Tractor", "Field"] },
+  { w: "Desert", t: ["Sand", "Dry", "Hot", "Cactus", "Dune"] },
+  { w: "Volcano", t: ["Lava", "Erupt", "Mountain", "Ash", "Magma"] },
+  { w: "Castle", t: ["King", "Moat", "Stone", "Tower", "Medieval"] },
+  { w: "Jungle", t: ["Trees", "Vines", "Rain", "Animals", "Dense"] },
+  { w: "Subway", t: ["Train", "Underground", "Station", "City", "Track"] },
+  { w: "Bakery", t: ["Bread", "Pastry", "Oven", "Shop", "Cake"] },
+  { w: "Gym", t: ["Weights", "Workout", "Muscle", "Treadmill", "Exercise"] },
+  { w: "Cave", t: ["Dark", "Bats", "Rock", "Underground", "Echo"] },
+  { w: "Lighthouse", t: ["Beam", "Coast", "Ships", "Tower", "Warn"] },
+  { w: "Playground", t: ["Swing", "Slide", "Kids", "Park", "Play"] },
+  { w: "Waterfall", t: ["Cliff", "River", "Falls", "Mist", "Rocks"] },
+  { w: "Zoo", t: ["Animals", "Cages", "Visit", "Exhibit", "Keeper"] },
+  { w: "Barbershop", t: ["Hair", "Cut", "Chair", "Clippers", "Shave"] },
+  { w: "Hotel", t: ["Room", "Stay", "Lobby", "Bed", "Booking"] },
+  { w: "Attic", t: ["Roof", "Storage", "Dusty", "House", "Boxes"] },
+  { w: "Greenhouse", t: ["Glass", "Plants", "Grow", "Warm", "Garden"] },
+  { w: "Swimming", t: ["Pool", "Water", "Stroke", "Laps", "Dive"] },
+  { w: "Basketball", t: ["Hoop", "Dribble", "Court", "Net", "Ball"] },
+  { w: "Chess", t: ["Board", "King", "Pieces", "Checkmate", "Strategy"] },
+  { w: "Yoga", t: ["Stretch", "Mat", "Pose", "Breathe", "Balance"] },
+  { w: "Skiing", t: ["Snow", "Slope", "Poles", "Mountain", "Lift"] },
+  { w: "Bowling", t: ["Pins", "Ball", "Lane", "Strike", "Alley"] },
+  { w: "Fishing", t: ["Rod", "Bait", "Hook", "Lake", "Catch"] },
+  { w: "Camping", t: ["Tent", "Fire", "Outdoors", "Sleeping bag", "Woods"] },
+  { w: "Marathon", t: ["Run", "Race", "Miles", "Finish", "Long"] },
+  { w: "Karaoke", t: ["Sing", "Microphone", "Lyrics", "Bar", "Song"] },
+  { w: "Gardening", t: ["Plant", "Soil", "Water", "Grow", "Weeds"] },
+  { w: "Painting", t: ["Brush", "Canvas", "Color", "Art", "Easel"] },
+  { w: "Baking", t: ["Oven", "Flour", "Cake", "Mix", "Recipe"] },
+  { w: "Surfing", t: ["Wave", "Board", "Ocean", "Ride", "Balance"] },
+  { w: "Cycling", t: ["Bike", "Pedal", "Wheels", "Ride", "Helmet"] },
+  { w: "Skateboard", t: ["Wheels", "Trick", "Ramp", "Ride", "Deck"] },
+  { w: "Boxing", t: ["Gloves", "Ring", "Punch", "Fight", "Round"] },
+  { w: "Golf", t: ["Club", "Hole", "Course", "Swing", "Putt"] },
+  { w: "Tennis", t: ["Racket", "Net", "Court", "Serve", "Ball"] },
+  { w: "Soccer", t: ["Goal", "Kick", "Field", "Ball", "Football"] },
+  { w: "Hiking", t: ["Trail", "Boots", "Mountain", "Walk", "Backpack"] },
+  { w: "Dancing", t: ["Music", "Move", "Floor", "Rhythm", "Partner"] },
+  { w: "Puzzle", t: ["Pieces", "Fit", "Picture", "Jigsaw", "Solve"] },
+  { w: "Knitting", t: ["Yarn", "Needles", "Sweater", "Loop", "Stitch"] },
+  { w: "Juggling", t: ["Balls", "Throw", "Catch", "Circus", "Hands"] },
+  { w: "Photography", t: ["Camera", "Picture", "Lens", "Shot", "Flash"] },
+  { w: "Ice skating", t: ["Rink", "Blades", "Glide", "Cold", "Fall"] },
+  { w: "Archery", t: ["Bow", "Arrow", "Target", "Aim", "Bullseye"] },
+  { w: "Smartphone", t: ["Call", "Screen", "Apps", "Pocket", "Text"] },
+  { w: "Password", t: ["Login", "Secret", "Account", "Type", "Forget"] },
+  { w: "Wifi", t: ["Internet", "Router", "Signal", "Connect", "Wireless"] },
+  { w: "Email", t: ["Inbox", "Send", "Message", "Attachment", "Spam"] },
+  { w: "Headphones", t: ["Ears", "Music", "Listen", "Wireless", "Sound"] },
+  { w: "Battery", t: ["Charge", "Power", "Dead", "Phone", "Energy"] },
+  { w: "Keyboard", t: ["Type", "Keys", "Computer", "Letters", "Space"] },
+  { w: "Robot", t: ["Machine", "Metal", "Program", "Human", "Automatic"] },
+  { w: "Drone", t: ["Fly", "Camera", "Remote", "Propeller", "Air"] },
+  { w: "Printer", t: ["Paper", "Ink", "Print", "Office", "Jam"] },
+  { w: "Podcast", t: ["Listen", "Episode", "Host", "Audio", "Show"] },
+  { w: "Screenshot", t: ["Capture", "Screen", "Image", "Save", "Phone"] },
+  { w: "Bluetooth", t: ["Wireless", "Pair", "Connect", "Speaker", "Phone"] },
+  { w: "Emoji", t: ["Face", "Text", "Symbol", "Message", "Smile"] },
+  { w: "Streaming", t: ["Watch", "Online", "Video", "Subscribe", "Binge"] },
+  { w: "Charger", t: ["Plug", "Cable", "Power", "Battery", "Wall"] },
+  { w: "Selfie", t: ["Photo", "Front", "Camera", "Face", "Phone"] },
+  { w: "Spreadsheet", t: ["Cells", "Rows", "Numbers", "Columns", "Formula"] },
+  { w: "Video call", t: ["Screen", "Camera", "Mute", "Face", "Talk"] },
+  { w: "Algorithm", t: ["Feed", "Code", "Recommend", "Computer", "Steps"] },
+  { w: "Voicemail", t: ["Message", "Phone", "Beep", "Missed", "Record"] },
+  { w: "Superhero", t: ["Cape", "Power", "Save", "Villain", "Comic"] },
+  { w: "Zombie", t: ["Undead", "Brains", "Walk", "Apocalypse", "Groan"] },
+  { w: "Wizard", t: ["Magic", "Wand", "Spell", "Hat", "Beard"] },
+  { w: "Pirate", t: ["Ship", "Treasure", "Parrot", "Sword", "Sea"] },
+  { w: "Cowboy", t: ["Horse", "Hat", "West", "Lasso", "Boots"] },
+  { w: "Ghost", t: ["Haunt", "White", "Scare", "Sheet", "Spirit"] },
+  { w: "Dragon", t: ["Fire", "Wings", "Scales", "Knight", "Myth"] },
+  { w: "Mermaid", t: ["Tail", "Ocean", "Half", "Fish", "Sing"] },
+  { w: "Vampire", t: ["Blood", "Fangs", "Bat", "Night", "Garlic"] },
+  { w: "Detective", t: ["Clue", "Solve", "Case", "Mystery", "Investigate"] },
+  { w: "Astronaut", t: ["Space", "Suit", "Rocket", "Moon", "Orbit"] },
+  { w: "Magician", t: ["Trick", "Hat", "Rabbit", "Illusion", "Card"] },
+  { w: "Clown", t: ["Circus", "Nose", "Makeup", "Funny", "Balloon"] },
+  { w: "Musical", t: ["Sing", "Stage", "Broadway", "Dance", "Show"] },
+  { w: "Cartoon", t: ["Animated", "Draw", "Kids", "Show", "Characters"] },
+  { w: "Sequel", t: ["Movie", "Second", "Follow", "Part", "Series"] },
+  { w: "Villain", t: ["Evil", "Bad", "Hero", "Plot", "Movie"] },
+  { w: "Documentary", t: ["Real", "Film", "Narrator", "Facts", "Subject"] },
+  { w: "Karate", t: ["Belt", "Kick", "Chop", "Dojo", "Martial"] },
+  { w: "Knight", t: ["Armor", "Sword", "Horse", "Castle", "Joust"] },
+  { w: "Robot vacuum", t: ["Floor", "Round", "Clean", "Automatic", "Dock"] },
+  { w: "Jealousy", t: ["Envy", "Green", "Want", "Other", "Feeling"] },
+  { w: "Nostalgia", t: ["Past", "Memory", "Miss", "Old", "Feeling"] },
+  { w: "Embarrassed", t: ["Blush", "Red", "Awkward", "Shame", "Face"] },
+  { w: "Excited", t: ["Happy", "Energy", "Jump", "Thrilled", "Anticipate"] },
+  { w: "Boredom", t: ["Nothing", "Dull", "Yawn", "Time", "Uninterested"] },
+  { w: "Patience", t: ["Wait", "Calm", "Time", "Virtue", "Rush"] },
+  { w: "Surprise", t: ["Shock", "Unexpected", "Party", "Gasp", "Sudden"] },
+  { w: "Confidence", t: ["Sure", "Self", "Believe", "Bold", "Doubt"] },
+  { w: "Homesick", t: ["Miss", "Away", "Family", "Travel", "Sad"] },
+  { w: "Regret", t: ["Wish", "Mistake", "Past", "Sorry", "Undo"] },
+  { w: "Panic", t: ["Fear", "Fast", "Breathe", "Emergency", "Freeze"] },
+  { w: "Relief", t: ["Sigh", "Over", "Stress", "Better", "Worry"] },
+  { w: "Curiosity", t: ["Question", "Wonder", "Cat", "Explore", "Know"] },
+  { w: "Gratitude", t: ["Thanks", "Appreciate", "Grateful", "Give", "Feeling"] },
+  { w: "Awkward", t: ["Silence", "Uncomfortable", "Weird", "Moment", "Cringe"] },
+  { w: "Stubborn", t: ["Refuse", "Change", "Mind", "Mule", "Insist"] },
+  { w: "Lonely", t: ["Alone", "Sad", "Company", "Isolated", "Friends"] },
+  { w: "Confused", t: ["Understand", "Lost", "Puzzled", "Question", "Unclear"] },
+  { w: "Proud", t: ["Achievement", "Parent", "Accomplish", "Chest", "Happy"] },
+  { w: "Nervous", t: ["Anxious", "Shake", "Sweat", "Worry", "Butterflies"] },
+  { w: "Thunderstorm", t: ["Lightning", "Rain", "Loud", "Clouds", "Boom"] },
+  { w: "Rainbow", t: ["Colors", "Rain", "Arc", "Sky", "Pot"] },
+  { w: "Snowflake", t: ["Snow", "Unique", "Ice", "Fall", "Crystal"] },
+  { w: "Tornado", t: ["Wind", "Funnel", "Spin", "Storm", "Twister"] },
+  { w: "Fog", t: ["Mist", "Thick", "See", "Morning", "Cloud"] },
+  { w: "Sunset", t: ["Evening", "Sun", "Horizon", "Orange", "Down"] },
+  { w: "Earthquake", t: ["Shake", "Ground", "Fault", "Tremor", "Crack"] },
+  { w: "Hurricane", t: ["Wind", "Storm", "Eye", "Coast", "Evacuate"] },
+  { w: "Drought", t: ["Dry", "Rain", "Water", "Crops", "Long"] },
+  { w: "Avalanche", t: ["Snow", "Mountain", "Slide", "Bury", "Fast"] },
+  { w: "Heatwave", t: ["Hot", "Temperature", "Days", "Summer", "Sweat"] },
+  { w: "Frost", t: ["Cold", "Ice", "Window", "Morning", "Freeze"] },
+  { w: "Puddle", t: ["Rain", "Water", "Splash", "Ground", "Shallow"] },
+  { w: "Moon", t: ["Night", "Sky", "Full", "Crater", "Tide"] },
+  { w: "Autumn", t: ["Leaves", "Fall", "Season", "Orange", "Cool"] },
+  { w: "Halloween", t: ["Costume", "Candy", "October", "Pumpkin", "Trick"] },
+  { w: "Birthday", t: ["Cake", "Candles", "Age", "Party", "Presents"] },
+  { w: "Wedding", t: ["Bride", "Groom", "Marry", "Ring", "Aisle"] },
+  { w: "New Year", t: ["Midnight", "Resolution", "Countdown", "January", "Party"] },
+  { w: "Thanksgiving", t: ["Turkey", "Family", "November", "Feast", "Grateful"] },
+  { w: "Fireworks", t: ["Explode", "Sky", "Colors", "July", "Bang"] },
+  { w: "Easter", t: ["Eggs", "Bunny", "Hunt", "Spring", "Basket"] },
+  { w: "Graduation", t: ["Cap", "Diploma", "School", "Gown", "Ceremony"] },
+  { w: "Christmas", t: ["Tree", "Santa", "December", "Presents", "Snow"] },
+  { w: "Valentine", t: ["Love", "Heart", "February", "Card", "Romance"] },
+  { w: "Anniversary", t: ["Years", "Couple", "Celebrate", "Date", "Marriage"] },
+  { w: "Parade", t: ["Floats", "Street", "March", "Band", "Crowd"] },
+  { w: "Passport", t: ["Travel", "Stamp", "Country", "Photo", "Border"] },
+  { w: "Suitcase", t: ["Pack", "Luggage", "Wheels", "Trip", "Zipper"] },
+  { w: "Road trip", t: ["Car", "Drive", "Miles", "Snacks", "Highway"] },
+  { w: "Souvenir", t: ["Gift", "Trip", "Buy", "Remember", "Shop"] },
+  { w: "Jet lag", t: ["Time zone", "Tired", "Flight", "Sleep", "Travel"] },
+  { w: "Cruise", t: ["Ship", "Ocean", "Cabin", "Buffet", "Vacation"] },
+  { w: "Map", t: ["Directions", "Fold", "Roads", "Lost", "Location"] },
+  { w: "Hostel", t: ["Cheap", "Bunk", "Backpacker", "Shared", "Stay"] },
+  { w: "Sunscreen", t: ["Burn", "Lotion", "Beach", "Apply", "Protect"] },
+  { w: "Postcard", t: ["Mail", "Picture", "Stamp", "Write", "Trip"] },
+  { w: "Compass", t: ["North", "Direction", "Needle", "Navigate", "Point"] },
+  { w: "Backpack", t: ["Straps", "Carry", "School", "Shoulders", "Bag"] },
+  { w: "Elbow", t: ["Arm", "Bend", "Joint", "Point", "Bone"] },
+  { w: "Eyebrow", t: ["Eye", "Hair", "Face", "Raise", "Above"] },
+  { w: "Sneeze", t: ["Nose", "Bless", "Sudden", "Cold", "Tissue"] },
+  { w: "Fingernail", t: ["Finger", "Clip", "Grow", "Bite", "Polish"] },
+  { w: "Heartbeat", t: ["Pulse", "Chest", "Rhythm", "Thump", "Alive"] },
+  { w: "Yawn", t: ["Tired", "Mouth", "Open", "Contagious", "Sleepy"] },
+  { w: "Freckle", t: ["Spot", "Skin", "Sun", "Face", "Small"] },
+  { w: "Shiver", t: ["Cold", "Shake", "Body", "Chill", "Tremble"] },
+  { w: "Blister", t: ["Skin", "Shoe", "Rub", "Bubble", "Foot"] },
+  { w: "Wrinkle", t: ["Age", "Skin", "Line", "Iron", "Old"] },
+  { w: "Hiccup", t: ["Breath", "Sound", "Stop", "Water", "Sudden"] },
+  { w: "Crush", t: ["Like", "Secret", "Feelings", "Heart", "Person"] },
+  { w: "Neighbor", t: ["Next", "House", "Door", "Live", "Street"] },
+  { w: "Grandmother", t: ["Family", "Cookies", "Old", "Mother", "Grandkids"] },
+  { w: "Blind date", t: ["Meet", "Stranger", "Setup", "Dinner", "Romance"] },
+  { w: "Argument", t: ["Fight", "Disagree", "Words", "Loud", "Angry"] },
+  { w: "Apology", t: ["Sorry", "Forgive", "Mistake", "Say", "Regret"] },
+  { w: "Reunion", t: ["Meet", "Again", "Class", "Family", "Years"] },
+  { w: "Roommate", t: ["Share", "Apartment", "Rent", "Live", "Together"] },
+  { w: "Babysitter", t: ["Kids", "Watch", "Parents", "Night", "Pay"] },
+  { w: "Long distance", t: ["Far", "Relationship", "Miles", "Apart", "Call"] },
+  { w: "Best friend", t: ["Close", "Buddy", "Forever", "Pal", "Trust"] },
+  { w: "Traffic jam", t: ["Cars", "Stuck", "Road", "Slow", "Horn"] },
+  { w: "Grocery list", t: ["Store", "Items", "Write", "Shop", "Forget"] },
+  { w: "Rent", t: ["Pay", "Month", "Landlord", "Apartment", "Due"] },
+  { w: "Queue", t: ["Line", "Wait", "People", "Turn", "Front"] },
+  { w: "Recycling", t: ["Bin", "Plastic", "Green", "Waste", "Reuse"] },
+  { w: "Receipt", t: ["Store", "Paper", "Purchase", "Return", "Print"] },
+  { w: "Escalator", t: ["Stairs", "Moving", "Mall", "Step", "Ride"] },
+  { w: "Elevator", t: ["Floors", "Button", "Up", "Building", "Doors"] },
+  { w: "Parking", t: ["Car", "Space", "Meter", "Lot", "Spot"] },
+  { w: "Haircut", t: ["Scissors", "Salon", "Trim", "Barber", "Style"] },
+  { w: "Tattoo", t: ["Ink", "Needle", "Skin", "Permanent", "Design"] },
+  { w: "Sunglasses", t: ["Eyes", "Sun", "Dark", "Face", "Shades"] },
+  { w: "Nap", t: ["Sleep", "Short", "Afternoon", "Rest", "Couch"] },
+  { w: "Homework", t: ["School", "Assignment", "Night", "Teacher", "Due"] },
+  { w: "Piano", t: ["Keys", "Play", "Black", "Music", "Bench"] },
+  { w: "Guitar", t: ["Strings", "Strum", "Chord", "Band", "Pick"] },
+  { w: "Drum", t: ["Beat", "Sticks", "Hit", "Band", "Rhythm"] },
+  { w: "Violin", t: ["Bow", "Strings", "Orchestra", "Chin", "Play"] },
+  { w: "Choir", t: ["Sing", "Group", "Voices", "Harmony", "Church"] },
+  { w: "Rocket", t: ["Space", "Launch", "Fuel", "Countdown", "NASA"] },
+  { w: "Bridge", t: ["Cross", "River", "Span", "Road", "Build"] },
+  { w: "Windmill", t: ["Blades", "Wind", "Turn", "Netherlands", "Power"] },
+  { w: "Balloon", t: ["Air", "Pop", "Float", "Party", "Helium"] },
+  { w: "Snowman", t: ["Carrot", "Roll", "Winter", "Melt", "Scarf"] },
+  { w: "Sandcastle", t: ["Beach", "Build", "Bucket", "Tide", "Sand"] },
+  { w: "Campfire", t: ["Wood", "Marshmallow", "Flames", "Night", "Circle"] },
+  { w: "Treehouse", t: ["Branches", "Kids", "Ladder", "Build", "Backyard"] },
+  { w: "Hammock", t: ["Hang", "Rest", "Trees", "Swing", "Nap"] },
+  { w: "Wheelbarrow", t: ["Push", "Garden", "Wheel", "Dirt", "Handles"] },
+  { w: "Lawnmower", t: ["Grass", "Cut", "Yard", "Push", "Loud"] },
+  { w: "Trampoline", t: ["Bounce", "Jump", "Springs", "Backyard", "Net"] },
+  { w: "Kite", t: ["Wind", "String", "Fly", "Sky", "Tail"] },
+  { w: "Bubble", t: ["Soap", "Pop", "Float", "Round", "Blow"] },
+  { w: "Shadow", t: ["Light", "Dark", "Shape", "Follow", "Sun"] },
+  { w: "Echo", t: ["Repeat", "Sound", "Canyon", "Shout", "Back"] },
+  { w: "Whisper", t: ["Quiet", "Ear", "Soft", "Secret", "Speak"] },
+  { w: "Sneakers", t: ["Shoes", "Laces", "Run", "Feet", "Comfort"] },
+  { w: "Scarf", t: ["Neck", "Warm", "Wrap", "Winter", "Wool"] },
+  { w: "Raincoat", t: ["Wet", "Jacket", "Hood", "Waterproof", "Storm"] },
+  { w: "Pajamas", t: ["Sleep", "Bed", "Comfy", "Night", "Wear"] },
+  { w: "Necklace", t: ["Neck", "Jewelry", "Chain", "Wear", "Pendant"] },
+  { w: "Glasses", t: ["Eyes", "See", "Lenses", "Frames", "Blurry"] },
+  { w: "Gloves", t: ["Hands", "Fingers", "Warm", "Winter", "Pair"] },
+  { w: "Zipper", t: ["Jacket", "Pull", "Teeth", "Close", "Stuck"] },
+  { w: "Button", t: ["Shirt", "Sew", "Hole", "Press", "Fasten"] },
+  { w: "Envelope", t: ["Letter", "Seal", "Mail", "Stamp", "Paper"] },
+  { w: "Calendar", t: ["Days", "Month", "Dates", "Wall", "Plan"] },
+  { w: "Diary", t: ["Write", "Secret", "Journal", "Lock", "Daily"] },
+  { w: "Newspaper", t: ["Read", "News", "Print", "Headline", "Morning"] },
+  { w: "Recipe", t: ["Cook", "Steps", "Ingredients", "Book", "Follow"] },
+  { w: "Bill", t: ["Pay", "Money", "Owe", "Mail", "Due"] },
+  { w: "Interview", t: ["Job", "Questions", "Suit", "Hire", "Nervous"] },
+  { w: "Deadline", t: ["Due", "Time", "Rush", "Project", "Late"] },
+  { w: "Meeting", t: ["Room", "Talk", "Agenda", "Work", "Schedule"] },
+  { w: "Promotion", t: ["Job", "Raise", "Title", "Boss", "Up"] },
+  { w: "Retirement", t: ["Stop", "Work", "Pension", "Old", "Age"] },
+  { w: "Allowance", t: ["Kids", "Money", "Weekly", "Chores", "Parents"] },
+  { w: "Auction", t: ["Bid", "Hammer", "Sold", "Price", "Highest"] },
+  { w: "Lottery", t: ["Numbers", "Win", "Ticket", "Jackpot", "Odds"] },
+  { w: "Charity", t: ["Give", "Donate", "Help", "Money", "Cause"] },
+  { w: "Volunteer", t: ["Free", "Help", "Time", "Sign up", "Give"] },
+  { w: "Election", t: ["Vote", "Ballot", "Candidate", "Poll", "Win"] },
+  { w: "Jury", t: ["Court", "Twelve", "Verdict", "Trial", "Judge"] },
+  { w: "Ambulance", t: ["Siren", "Hospital", "Emergency", "Paramedic", "Fast"] },
+  { w: "Firefighter", t: ["Hose", "Flames", "Truck", "Rescue", "Helmet"] },
+  { w: "Dentist", t: ["Teeth", "Drill", "Chair", "Cavity", "Clean"] },
+  { w: "Chef", t: ["Cook", "Kitchen", "Restaurant", "Hat", "Menu"] },
+  { w: "Teacher", t: ["School", "Class", "Students", "Lesson", "Board"] },
+  { w: "Pilot", t: ["Plane", "Fly", "Cockpit", "Captain", "Air"] },
+  { w: "Farmer", t: ["Crops", "Field", "Tractor", "Harvest", "Animals"] },
+  { w: "Lifeguard", t: ["Pool", "Whistle", "Rescue", "Chair", "Beach"] },
+  { w: "Waiter", t: ["Restaurant", "Order", "Table", "Tip", "Serve"] },
+  { w: "Mailman", t: ["Letters", "Deliver", "Route", "Post", "Bag"] },
+  { w: "Referee", t: ["Whistle", "Game", "Foul", "Rules", "Stripes"] },
+  { w: "Coach", t: ["Team", "Train", "Sideline", "Practice", "Players"] }
+];
+/*DECK-END*/
+(function () {
+  "use strict";
+
+  var KEY = "forbidden-words-v2";
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- state ---------- */
+
+  function defaults() {
+    return {
+      screen: "setup",
+      names: ["Player 1", "Player 2"],
+      scores: [0, 0],
+      turn: 0,
+      settings: { len: 60, goal: 15, skips: 3 },
+      deck: [],
+      round: null,
+      winner: null
+    };
+  }
+
+  var state = defaults();
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) { /* storage unavailable */ }
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; }
+    if (!raw) { return; }
+    var saved = null;
+    try { saved = JSON.parse(raw); } catch (e) { return; }
+    if (!saved || typeof saved !== "object") { return; }
+    var s = defaults();
+    if (Array.isArray(saved.names) && saved.names.length === 2) {
+      s.names = [String(saved.names[0] || "Player 1"), String(saved.names[1] || "Player 2")];
+    }
+    if (Array.isArray(saved.scores) && saved.scores.length === 2) {
+      s.scores = [num(saved.scores[0]), num(saved.scores[1])];
+    }
+    s.turn = saved.turn === 1 ? 1 : 0;
+    if (saved.settings) {
+      s.settings.len = num(saved.settings.len) || 60;
+      s.settings.goal = num(saved.settings.goal) || 15;
+      s.settings.skips = saved.settings.skips === undefined ? 3 : num(saved.settings.skips);
+    }
+    if (Array.isArray(saved.deck)) { s.deck = saved.deck.filter(validIndex); }
+    s.winner = saved.winner === 0 || saved.winner === 1 ? saved.winner : null;
+    if (saved.screen === "round") {
+      s.screen = "handoff";
+      s.round = null;
+    } else if (saved.screen === "over" && saved.round) {
+      s.screen = "over";
+      s.round = normalizeRound(saved.round);
+    } else if (saved.screen === "handoff") {
+      s.screen = "handoff";
+    } else {
+      s.screen = "setup";
+    }
+    state = s;
+  }
+
+  function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+  function validIndex(i) { return typeof i === "number" && i >= 0 && i < DECK.length; }
+
+  function normalizeRound(r) {
+    return {
+      player: r.player === 1 ? 1 : 0,
+      card: validIndex(r.card) ? r.card : 0,
+      got: Array.isArray(r.got) ? r.got.map(String) : [],
+      tab: Array.isArray(r.tab) ? r.tab.map(String) : [],
+      skip: Array.isArray(r.skip) ? r.skip.map(String) : [],
+      skipsLeft: num(r.skipsLeft),
+      endsAt: 0,
+      timeUp: !!r.timeUp
+    };
+  }
+
+  /* ---------- deck ---------- */
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function freshDeck() {
+    var a = [];
+    for (var i = 0; i < DECK.length; i++) { a.push(i); }
+    return shuffle(a);
+  }
+
+  function drawCard() {
+    if (!state.deck.length) { state.deck = freshDeck(); }
+    return state.deck.pop();
+  }
+
+  /* ---------- helpers ---------- */
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function fmtTime(sec) {
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function signed(n) { return (n >= 0 ? "+" : "") + n; }
+
+  function other(i) { return i === 0 ? 1 : 0; }
+
+  /* ---------- screens ---------- */
+
+  var SCREENS = { setup: "screen-setup", handoff: "screen-handoff", round: "screen-round", over: "screen-over" };
+
+  function show(name) {
+    state.screen = name;
+    for (var k in SCREENS) {
+      if (Object.prototype.hasOwnProperty.call(SCREENS, k)) {
+        $(SCREENS[k]).hidden = (k !== name);
+      }
+    }
+    if (name !== "round") { stopTimer(); }
+    if (name === "setup") { renderSetup(); }
+    if (name === "handoff") { renderHandoff(); }
+    if (name === "round") { renderRound(); }
+    if (name === "over") { renderOver(); }
+    window.scrollTo(0, 0);
+    save();
+  }
+
+  /* ---------- setup ---------- */
+
+  function renderSetup() {
+    $("p1").value = state.names[0];
+    $("p2").value = state.names[1];
+    $("len").value = String(state.settings.len);
+    $("goal").value = String(state.settings.goal);
+    $("skips").value = String(state.settings.skips);
+  }
+
+  function startGame() {
+    var n1 = $("p1").value.trim() || "Player 1";
+    var n2 = $("p2").value.trim() || "Player 2";
+    state.names = [n1.slice(0, 20), n2.slice(0, 20)];
+    state.settings.len = num($("len").value) || 60;
+    state.settings.goal = num($("goal").value) || 15;
+    state.settings.skips = num($("skips").value);
+    state.scores = [0, 0];
+    state.turn = 0;
+    state.winner = null;
+    state.round = null;
+    state.deck = freshDeck();
+    show("handoff");
+  }
+
+  /* ---------- handoff ---------- */
+
+  function renderHandoff() {
+    var won = state.winner !== null;
+
+    $("win-banner").hidden = !won;
+    if (won) {
+      $("win-name").textContent = state.names[state.winner] + " wins";
+      $("win-sub").textContent = state.names[0] + " " + state.scores[0] + "  •  " +
+        state.names[1] + " " + state.scores[1];
+    }
+
+    $("handoff-title").textContent = won ? "Game over" : "Pass the phone to " + state.names[state.turn];
+    $("handoff-sub").textContent = won
+      ? "Play again with the same names and settings."
+      : "First to " + state.settings.goal + " points.";
+
+    var html = "";
+    for (var i = 0; i < 2; i++) {
+      var active = (!won && i === state.turn);
+      html += '<div class="row' + (active ? " active" : "") + '">' +
+        '<span class="who"><span class="dot"></span><span class="nm">' + esc(state.names[i]) + "</span></span>" +
+        '<span class="score">' + state.scores[i] + "</span></div>";
+    }
+    $("board").innerHTML = html;
+
+    $("btn-start-turn").hidden = won;
+    $("btn-start-turn").textContent = "Start " + state.names[state.turn] + "'s turn";
+    $("handoff-note").hidden = won;
+    $("handoff-note").textContent = "Only " + state.names[state.turn] +
+      " should look at the next screen.";
+    $("btn-play-again").hidden = !won;
+    $("btn-swap").hidden = won;
+
+    $("confirm-new").hidden = true;
+  }
+
+  function applyPoints(player, points) {
+    state.scores[player] = state.scores[player] + points;
+    if (state.scores[player] >= state.settings.goal) {
+      state.winner = player;
+    } else {
+      state.turn = other(player);
+    }
+    state.round = null;
+    show("handoff");
+  }
+
+  /* ---------- round ---------- */
+
+  var timerId = null;
+
+  function startTurn() {
+    state.round = {
+      player: state.turn,
+      card: drawCard(),
+      got: [],
+      tab: [],
+      skip: [],
+      skipsLeft: state.settings.skips,
+      endsAt: Date.now() + state.settings.len * 1000,
+      timeUp: false
+    };
+    show("round");
+    startTimer();
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerId = window.setInterval(tick, 250);
+    tick();
+  }
+
+  function stopTimer() {
+    if (timerId !== null) { window.clearInterval(timerId); timerId = null; }
+  }
+
+  function remaining() {
+    if (!state.round) { return 0; }
+    return Math.max(0, Math.ceil((state.round.endsAt - Date.now()) / 1000));
+  }
+
+  function tick() {
+    if (!state.round) { stopTimer(); return; }
+    var r = remaining();
+    var el = $("timer");
+    el.textContent = fmtTime(r);
+    if (r <= 10) { el.classList.add("low"); } else { el.classList.remove("low"); }
+    if (r <= 0) {
+      stopTimer();
+      state.round.timeUp = true;
+      show("over");
+    }
+  }
+
+  function renderRound() {
+    var round = state.round;
+    if (!round) { show("handoff"); return; }
+    var card = DECK[round.card];
+
+    $("target").textContent = card.w;
+
+    var html = "";
+    for (var i = 0; i < card.t.length; i++) {
+      html += '<div class="taboo-item"><span class="tick"></span><span class="txt">' +
+        esc(card.t[i]) + "</span></div>";
+    }
+    $("taboo-list").innerHTML = html;
+
+    $("skips-left").textContent = round.skipsLeft < 0
+      ? "Skips left: unlimited"
+      : "Skips left: " + round.skipsLeft;
+    $("tally").textContent = "Got +" + round.got.length + ", Taboo -" + round.tab.length;
+    $("btn-skip").disabled = (round.skipsLeft === 0);
+    $("timer").textContent = fmtTime(remaining());
+  }
+
+  function act(kind) {
+    var round = state.round;
+    if (!round || state.screen !== "round") { return; }
+    var word = DECK[round.card].w;
+    if (kind === "skip") {
+      if (round.skipsLeft === 0) { return; }
+      if (round.skipsLeft > 0) { round.skipsLeft -= 1; }
+      round.skip.push(word);
+    } else if (kind === "taboo") {
+      round.tab.push(word);
+    } else {
+      round.got.push(word);
+    }
+    round.card = drawCard();
+    renderRound();
+    save();
+  }
+
+  /* ---------- round over ---------- */
+
+  function roundPoints() {
+    if (!state.round) { return 0; }
+    return state.round.got.length - state.round.tab.length;
+  }
+
+  function renderOver() {
+    var round = state.round;
+    if (!round) { show("handoff"); return; }
+    var pts = roundPoints();
+
+    $("over-title").textContent = round.timeUp ? "Time's up" : "Turn ended";
+    $("over-sub").textContent = "Round for " + state.names[round.player] + ".";
+
+    var res = $("over-points");
+    res.textContent = signed(pts);
+    res.className = "result " + (pts > 0 ? "pos" : (pts < 0 ? "neg" : ""));
+
+    $("over-got").textContent = round.got.length ? round.got.join(", ") : "—";
+    $("over-taboo").textContent = round.tab.length ? round.tab.join(", ") : "—";
+    $("over-skipped").textContent = round.skip.length ? round.skip.join(", ") : "—";
+
+    $("btn-apply").textContent = "Add " + signed(pts) + " to " + state.names[round.player];
+  }
+
+  /* ---------- wiring ---------- */
+
+  $("btn-start-game").addEventListener("click", startGame);
+
+  $("btn-start-turn").addEventListener("click", startTurn);
+
+  $("btn-play-again").addEventListener("click", function () {
+    state.scores = [0, 0];
+    state.turn = 0;
+    state.winner = null;
+    state.round = null;
+    state.deck = freshDeck();
+    show("handoff");
+  });
+
+  $("btn-swap").addEventListener("click", function () {
+    state.turn = other(state.turn);
+    show("handoff");
+  });
+
+  $("btn-new").addEventListener("click", function () {
+    $("confirm-new").hidden = false;
+  });
+
+  $("btn-new-cancel").addEventListener("click", function () {
+    $("confirm-new").hidden = true;
+  });
+
+  $("btn-new-confirm").addEventListener("click", function () {
+    state.scores = [0, 0];
+    state.turn = 0;
+    state.winner = null;
+    state.round = null;
+    state.deck = freshDeck();
+    show("setup");
+  });
+
+  $("btn-skip").addEventListener("click", function () { act("skip"); });
+  $("btn-taboo").addEventListener("click", function () { act("taboo"); });
+  $("btn-got").addEventListener("click", function () { act("got"); });
+
+  $("btn-end-early").addEventListener("click", function () {
+    if (!state.round) { return; }
+    stopTimer();
+    state.round.timeUp = false;
+    show("over");
+  });
+
+  $("btn-apply").addEventListener("click", function () {
+    if (!state.round) { show("handoff"); return; }
+    applyPoints(state.round.player, roundPoints());
+  });
+
+  $("btn-discard").addEventListener("click", function () {
+    if (!state.round) { show("handoff"); return; }
+    state.turn = other(state.round.player);
+    state.round = null;
+    show("handoff");
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (state.screen !== "round") { return; }
+    var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
+    if (tag === "input" || tag === "select" || tag === "textarea") { return; }
+    var k = e.key.toLowerCase();
+    if (k === "s") { e.preventDefault(); act("skip"); }
+    else if (k === "t") { e.preventDefault(); act("taboo"); }
+    else if (k === "g" || k === " " || e.key === "Spacebar") { e.preventDefault(); act("got"); }
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && state.screen === "round") { tick(); }
+  });
+
+  /* ---------- boot ---------- */
+
+  load();
+  if (state.screen === "over" && !state.round) { state.screen = "handoff"; }
+  show(state.screen);
+})();
+</script>
+</body>
+</html>
