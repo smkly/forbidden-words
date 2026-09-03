@@ -263,12 +263,6 @@
   }
   .prow .prm:hover:not(:disabled) { color: var(--taboo); border-color: var(--taboo); }
 
-  /* Setup toggle */
-  .check { display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 48px; }
-  .check input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); margin: 0; }
-  .check .ct { display: flex; flex-direction: column; gap: 2px; }
-  .check .ct b { font-size: 15px; font-weight: 600; }
-
   /* Round review */
   .review { display: flex; flex-direction: column; gap: 8px; }
   .review .lbl {
@@ -354,13 +348,16 @@
           <option value="-1">Unlimited</option>
         </select>
       </div>
-      <label class="check" for="sound">
-        <input type="checkbox" id="sound" checked>
-        <span class="ct">
-          <b>Sound</b>
-          <span class="tiny">A tick that speeds up as the clock runs down, and a buzz at zero.</span>
-        </span>
-      </label>
+      <div class="field">
+        <label for="sound">Timer sound</label>
+        <select id="sound">
+          <option value="end">Buzz at the end only</option>
+          <option value="30s">Beep every 30 seconds</option>
+          <option value="tick">Ticking that speeds up</option>
+          <option value="off">Off</option>
+        </select>
+        <span class="tiny">Buzz at zero is the default. Pick ticking if you want pressure.</span>
+      </div>
     </div>
 
     <div class="panel">
@@ -1182,7 +1179,7 @@ var DECK = [
       screen: "setup",
       players: [{ n: "Player 1", s: 0 }, { n: "Player 2", s: 0 }],
       turn: 0,
-      settings: { len: 60, goal: 15, skips: 3, sound: true },
+      settings: { len: 60, goal: 15, skips: 3, sound: "end" },
       deck: [],
       drawn: [],
       seen: [],
@@ -1240,7 +1237,7 @@ var DECK = [
       s.settings.len = num(saved.settings.len) || 60;
       s.settings.goal = num(saved.settings.goal) || 15;
       s.settings.skips = saved.settings.skips === undefined ? 3 : num(saved.settings.skips);
-      s.settings.sound = saved.settings.sound !== false;
+      s.settings.sound = soundMode(saved.settings.sound);
     }
     if (Array.isArray(saved.deck)) { s.deck = saved.deck.filter(validIndex); }
     if (Array.isArray(saved.drawn)) { s.drawn = saved.drawn.filter(validIndex); }
@@ -1266,6 +1263,23 @@ var DECK = [
   }
 
   function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+
+  var SOUND_MODES = {
+    end: "Buzz at the end only",
+    "30s": "Beep every 30 seconds",
+    tick: "Ticking that speeds up",
+    off: "Off"
+  };
+  var SOUND_SHORT = { end: "Buzz at end", "30s": "Beep every 30s", tick: "Ticking", off: "Off" };
+
+  /* Accepts the new string modes and migrates the old boolean:
+     true -> "end" (the new default), false -> "off". */
+  function soundMode(v) {
+    if (v === true) { return "end"; }
+    if (v === false) { return "off"; }
+    if (typeof v === "string" && SOUND_MODES[v]) { return v; }
+    return "end";
+  }
 
   function playerName(v, i) {
     var t = v === undefined || v === null ? "" : String(v).trim();
@@ -1364,6 +1378,13 @@ var DECK = [
   /* ---------- sound ---------- */
 
   var audioCtx = null;
+  /* Muting from the round screen lasts for the current round only and is
+     never persisted; the chosen mode in settings stays untouched. */
+  var roundMute = false;
+
+  function effMode() {
+    return roundMute ? "off" : soundMode(state.settings.sound);
+  }
 
   function getCtx() {
     try {
@@ -1376,14 +1397,14 @@ var DECK = [
 
   /* Called from the Start turn click so iOS Safari unlocks audio on a gesture. */
   function unlockAudio() {
-    if (!state.settings.sound) { return; }
+    if (effMode() === "off") { return; }
     var ctx = getCtx();
     if (!ctx) { return; }
     try { if (ctx.state === "suspended") { ctx.resume(); } } catch (e) { /* ignore */ }
   }
 
   function beep(freq, dur, type, vol, delay) {
-    if (!state.settings.sound) { return; }
+    if (effMode() === "off") { return; }
     var ctx = getCtx();
     if (!ctx) { return; }
     try {
@@ -1425,7 +1446,7 @@ var DECK = [
     if (!round || state.screen !== "round") { return; }
     var now = Date.now();
     var total = state.settings.len * 1000;
-    if (!state.settings.sound) {
+    if (effMode() !== "tick") {
       metroNext = now + 250;
       return;
     }
@@ -1468,11 +1489,36 @@ var DECK = [
   }
   function soundTaboo() { beep(150, 0.15, "sawtooth", 0.12); }
 
+  /* One clear beep at each whole 30 seconds of the round elapsed, expressed as
+     the remaining seconds it lands on: a 60s round beeps at 30 left, 90s at 60
+     and 30, 120s at 90, 60 and 30, and 45s at 15. */
+  function markSeconds() {
+    var marks = {};
+    var total = state.settings.len;
+    for (var m = total - 30; m > 0; m -= 30) { marks[m] = 1; }
+    return marks;
+  }
+
+  function soundMark() { beep(880, 0.1, "sine", 0.11); }
+  function soundTenLeft() {
+    beep(1046, 0.07, "sine", 0.11, 0);
+    beep(1046, 0.07, "sine", 0.11, 0.13);
+  }
+
+  /* Called once per whole second of the round clock. */
+  function timerSecond(r) {
+    if (effMode() !== "30s" || r <= 0) { return; }
+    if (r === 10) { soundTenLeft(); return; }
+    if (markSeconds()[r]) { soundMark(); }
+  }
+
   function renderSoundBtn() {
-    var on = state.settings.sound;
+    var chosen = soundMode(state.settings.sound);
     var b = $("btn-sound");
-    b.textContent = on ? "Sound on" : "Sound off";
-    b.setAttribute("aria-pressed", on ? "true" : "false");
+    var silent = (chosen === "off");
+    b.disabled = silent;
+    b.textContent = (silent || roundMute) ? "Sound off" : SOUND_SHORT[chosen];
+    b.setAttribute("aria-pressed", (silent || roundMute) ? "false" : "true");
   }
 
   /* ---------- helpers ---------- */
@@ -1542,7 +1588,7 @@ var DECK = [
     $("len").value = String(state.settings.len);
     $("goal").value = String(state.settings.goal);
     $("skips").value = String(state.settings.skips);
-    $("sound").checked = !!state.settings.sound;
+    $("sound").value = soundMode(state.settings.sound);
   }
 
   function resetScores() {
@@ -1554,7 +1600,7 @@ var DECK = [
     state.settings.len = num($("len").value) || 60;
     state.settings.goal = num($("goal").value) || 15;
     state.settings.skips = num($("skips").value);
-    state.settings.sound = !!$("sound").checked;
+    state.settings.sound = soundMode($("sound").value);
     resetScores();
     state.turn = 0;
     state.winner = null;
@@ -1629,6 +1675,7 @@ var DECK = [
   var timerId = null;
 
   function startTurn() {
+    roundMute = false;
     unlockAudio();
     state.round = {
       player: state.turn,
@@ -1636,7 +1683,8 @@ var DECK = [
       plays: [],
       skipsLeft: state.settings.skips,
       endsAt: Date.now() + state.settings.len * 1000,
-      timeUp: false
+      timeUp: false,
+      lastSec: state.settings.len
     };
     show("round");
     startTimer();
@@ -1665,6 +1713,11 @@ var DECK = [
     var el = $("timer");
     el.textContent = fmtTime(r);
     if (r <= 10) { el.classList.add("low"); } else { el.classList.remove("low"); }
+    if (state.round.lastSec !== r) {
+      var prev = state.round.lastSec;
+      state.round.lastSec = r;
+      if (prev !== undefined) { timerSecond(r); }
+    }
     if (r <= 0) {
       stopTimer();
       state.round.timeUp = true;
@@ -1835,14 +1888,14 @@ var DECK = [
   $("btn-got").addEventListener("click", function () { act("got"); });
 
   $("btn-sound").addEventListener("click", function () {
-    state.settings.sound = !state.settings.sound;
+    if (soundMode(state.settings.sound) === "off") { return; }
+    roundMute = !roundMute;
     renderSoundBtn();
-    if (state.settings.sound) {
+    if (!roundMute) {
       unlockAudio();
       beep(1046, 0.03, "sine", 0.08);
       metroNext = Date.now() + 120;
     }
-    save();
   });
 
   $("btn-end-early").addEventListener("click", function () {
